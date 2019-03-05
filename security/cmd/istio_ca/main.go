@@ -21,6 +21,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+	"crypto"
+	"crypto/rsa"
 
 	"istio.io/istio/pkg/spiffe"
 
@@ -421,6 +423,7 @@ func runCA() {
 func createCA(client corev1.CoreV1Interface) *ca.IstioCA {
 	var caOpts *ca.IstioCAOptions
 	var err error
+	var key crypto.PrivateKey
 
 	if opts.selfSignedCA {
 		log.Info("Use self-signed certificate as the CA certificate")
@@ -447,8 +450,14 @@ func createCA(client corev1.CoreV1Interface) *ca.IstioCA {
 			if err := importCAKey(); err != nil {
 				fatalf("Failed to import CA key (error: %v)", err)
 			}
-			if key, err := crypto11.FindKeyPair(nil, opts.protectedKeyLabel); err != nil {
+			if key, err = crypto11.FindKeyPair(nil, []byte(opts.protectedCAKeyLabel)); err != nil {
 				fatalf("Failed to find CA key (error: %v)", err)
+			}
+			log.Info("Found the key")
+			if _, ok := key.(crypto.Signer).Public().(*rsa.PublicKey); ok {
+				log.Info("Found key is valid")
+			} else {
+				fatalf("CA key validate failed (error: %v)", err)
 			}
 		}
 		caOpts, err = ca.NewPluggedCertIstioCAOptions(opts.certChainFile, opts.signingCertFile, opts.signingKeyFile,
@@ -511,8 +520,9 @@ func verifyCommandLineOptions() {
 
 func importCAKey() error {
 
-	if out, err := exec.Command("/import.sh", opts.signingKeyFile, opts.signingCertFile, opts.protectedCAKeyLabel,
+	if _, err := exec.Command("/import.sh", opts.signingKeyFile, opts.signingCertFile, opts.protectedCAKeyLabel,
 				opts.protectedCAKeyId, opts.protectedTokenPin).Output();  err != nil {
-		rerurn err
+		return err
 	}
+	return nil
 }

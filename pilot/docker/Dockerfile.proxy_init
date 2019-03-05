@@ -1,4 +1,6 @@
 FROM ubuntu:xenial
+ENV http_proxy http://proxy-us.intel.com:911
+ENV https_proxy https://proxy-us.intel.com:911
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     iproute2 \
     iptables \

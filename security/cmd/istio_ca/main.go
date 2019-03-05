@@ -18,11 +18,13 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
+	"github.com/ThalesIgnite/crypto11"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,6 +64,11 @@ type cliOptions struct { // nolint: maligned
 
 	selfSignedCA        bool
 	selfSignedCACertTTL time.Duration
+
+	protectedCAKey       bool
+	protectedCAKeyLabel  string
+	protectedCAKeyId     string
+	protectedTokenPin    string
 
 	workloadCertTTL    time.Duration
 	maxWorkloadCertTTL time.Duration
@@ -193,6 +200,14 @@ func initCLI() {
 		"The TTL of self-signed CA root certificate.")
 	flags.StringVar(&opts.trustDomain, "trust-domain", "",
 		"The domain serves to identify the system with SPIFFE.")
+	// Configuration if Citadel accepts protected key configured through arguments.
+	flags.BoolVar(&opts.protectedCAKey, "use-protected-ca-key", false,
+		"Indicates to use pkcs11 protected CA key. ")
+	flags.StringVar(&opts.protectedCAKeyLabel, "protected-ca-key-label", "cakey",
+		 "CA key label for import and find")
+	flags.StringVar(&opts.protectedCAKeyLabel, "protected-ca-key-id", "8738", "CA key id for import")
+	flags.StringVar(&opts.protectedTokenPin, "protected-token-pin", "123456789", "Pin for creating token")
+
 	// Upstream CA configuration if Citadel interacts with upstream CA.
 	flags.StringVar(&opts.cAClientConfig.CAAddress, "upstream-ca-address", "", "The IP:port address of the upstream "+
 		"CA. When set, the CA will rely on the upstream Citadel to provision its own certificate.")
@@ -443,6 +458,15 @@ func createCA(client corev1.CoreV1Interface) *ca.IstioCA {
 		}
 	} else {
 		log.Info("Use certificate from argument as the CA certificate")
+
+		if opts.protectedCAKey {
+			if err := importCAKey(); err != nil {
+				fatalf("Failed to import CA key (error: %v)", err)
+			}
+			if key, err := crypto11.FindKeyPair(nil, opts.protectedKeyLabel); err != nil {
+				fatalf("Failed to find CA key (error: %v)", err)
+			}
+		}
 		caOpts, err = ca.NewPluggedCertIstioCAOptions(opts.certChainFile, opts.signingCertFile, opts.signingKeyFile,
 			opts.rootCertFile, opts.workloadCertTTL, opts.maxWorkloadCertTTL, opts.istioCaStorageNamespace, client)
 		if err != nil {
@@ -498,5 +522,13 @@ func verifyCommandLineOptions() {
 	if opts.workloadCertGracePeriodRatio < 0 || opts.workloadCertGracePeriodRatio > 1 {
 		fatalf("Workload cert grace period ratio %f is invalid. It should be within [0, 1]",
 			opts.workloadCertGracePeriodRatio)
+	}
+}
+
+func importCAKey() error {
+
+	if out, err := exec.Command("/import.sh", opts.signingKeyFile, opts.signingCertFile, opts.protectedCAKeyLabel,
+				opts.protectedCAKeyId, opts.protectedTokenPin).Output();  err != nil {
+		rerurn err
 	}
 }

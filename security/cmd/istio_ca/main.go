@@ -207,7 +207,7 @@ func initCLI() {
 		"The domain serves to identify the system with spiffe ")
 >>>>>>> Initial changes for CA key protection using SoftHSM
 	// Configuration if Citadel accepts protected key configured through arguments.
-	flags.BoolVar(&opts.protectedCAKey, "use-protected-ca-key", false,
+	flags.BoolVar(&opts.protectedCAKey, "protected-ca-key", false,
 		"Indicates to use pkcs11 protected CA key. ")
 	flags.StringVar(&opts.protectedCAKeyLabel, "protected-ca-key-label", "cakey",
 		 "CA key label for import and find")

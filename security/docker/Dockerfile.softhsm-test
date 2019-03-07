@@ -6,6 +6,7 @@ RUN apt-get install -y softhsm
 RUN apt-get install -y softhsm2
 RUN apt-get install -y libsofthsm2
 RUN apt-get install -y opensc
+RUN apt-get install -y libltdl-dev
 
 RUN mkdir /var/lib/softhsm/tokens
 COPY import.sh /
@@ -18,7 +19,7 @@ COPY istio_ca.key /usr/local/bin/istio_ca.key
 
 
 ENTRYPOINT [ "/usr/local/bin/istio_ca", \
-"--use-protected-ca-key", "true", \
+"--protected-ca-key", \
 "--protected-ca-key-label", "catestkey", \
 "--protected-ca-key-id", "13107", \
 "--protected-token-pin", "999999999", \

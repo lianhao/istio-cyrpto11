@@ -16,7 +16,7 @@
 #
 # This script builds and link stamps the output
 
-VERBOSE=${VERBOSE:-"0"}
+VERBOSE=${VERBOSE:-"1"}
 V=""
 if [[ "${VERBOSE}" == "1" ]];then
     V="-x"

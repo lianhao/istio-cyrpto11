@@ -1,5 +1,8 @@
 FROM ubuntu:xenial
 
+ENV http_proxy http://proxy-us.intel.com:911
+ENV https_proxy https://proxy-us.intel.com:911
+
 RUN apt-get update
 
 RUN apt-get install -y softhsm
@@ -7,6 +10,7 @@ RUN apt-get install -y softhsm2
 RUN apt-get install -y libsofthsm2
 RUN apt-get install -y opensc
 RUN apt-get install -y libltdl-dev
+RUN apt-get install -y openssl
 
 RUN mkdir /var/lib/softhsm/tokens
 COPY import.sh /

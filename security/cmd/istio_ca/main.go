@@ -184,7 +184,7 @@ func init() {
 		"Indicates to use pkcs11 protected CA key. ")
 	flags.StringVar(&opts.protectedCAKeyLabel, "protected-ca-key-label", "cakey",
 		 "CA key label for import and find")
-	flags.StringVar(&opts.protectedCAKeyLabel, "protected-ca-key-id", "8738", "CA key id for import")
+	flags.StringVar(&opts.protectedCAKeyId, "protected-ca-key-id", "8738", "CA key id for import")
 	flags.StringVar(&opts.protectedTokenPin, "protected-token-pin", "123456789", "Pin for creating token")
 
 	// Upstream CA configuration if Citadel interacts with upstream CA.
@@ -449,6 +449,9 @@ func createCA(client corev1.CoreV1Interface) *ca.IstioCA {
 		if opts.protectedCAKey {
 			if err := importCAKey(); err != nil {
 				fatalf("Failed to import CA key (error: %v)", err)
+			}
+			if _, err := crypto11.ConfigureFromFile("/tmp/config");  err != nil {
+				fatalf("PKCS11 config from file failed (error: %v)", err)
 			}
 			if key, err = crypto11.FindKeyPair(nil, []byte(opts.protectedCAKeyLabel)); err != nil {
 				fatalf("Failed to find CA key (error: %v)", err)

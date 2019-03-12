@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"strings"
 	"time"
+	"crypto"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -178,7 +179,7 @@ func NewSelfSignedIstioCAOptions(ctx context.Context, caCertTTL, certTTL, maxCer
 			return nil, fmt.Errorf("failed to append root certificates (%v)", err)
 		}
 
-		if caOpts.KeyCertBundle, err = util.NewVerifiedKeyCertBundleFromPem(pemCert, pemKey, nil, rootCerts); err != nil {
+		if caOpts.KeyCertBundle, err = util.NewVerifiedKeyCertBundleFromPem(pemCert, pemKey, nil, rootCerts, nil); err != nil {
 			return nil, fmt.Errorf("failed to create CA KeyCertBundle (%v)", err)
 		}
 
@@ -196,7 +197,7 @@ func NewSelfSignedIstioCAOptions(ctx context.Context, caCertTTL, certTTL, maxCer
 			return nil, fmt.Errorf("failed to append root certificates (%v)", err)
 		}
 		if caOpts.KeyCertBundle, err = util.NewVerifiedKeyCertBundleFromPem(caSecret.Data[caCertID],
-			caSecret.Data[caPrivateKeyID], nil, rootCerts); err != nil {
+			caSecret.Data[caPrivateKeyID], nil, rootCerts, nil); err != nil {
 			return nil, fmt.Errorf("failed to create CA KeyCertBundle (%v)", err)
 		}
 		log.Infof("Using existing public key: %v", string(rootCerts))
@@ -209,7 +210,7 @@ func NewSelfSignedIstioCAOptions(ctx context.Context, caCertTTL, certTTL, maxCer
 }
 
 // NewPluggedCertIstioCAOptions returns a new IstioCAOptions instance using given certificate.
-func NewPluggedCertIstioCAOptions(certChainFile, signingCertFile, signingKeyFile, rootCertFile string,
+func NewPluggedCertIstioCAOptions(certChainFile, signingCertFile, signingKeyFile, rootCertFile string, privKey crypto.PrivateKey,
 	certTTL, maxCertTTL time.Duration, namespace string, client corev1.CoreV1Interface) (caOpts *IstioCAOptions, err error) {
 	caOpts = &IstioCAOptions{
 		CAType:     pluggedCertCA,
@@ -217,7 +218,7 @@ func NewPluggedCertIstioCAOptions(certChainFile, signingCertFile, signingKeyFile
 		MaxCertTTL: maxCertTTL,
 	}
 	if caOpts.KeyCertBundle, err = util.NewVerifiedKeyCertBundleFromFile(
-		signingCertFile, signingKeyFile, certChainFile, rootCertFile); err != nil {
+		signingCertFile, signingKeyFile, certChainFile, rootCertFile, privKey); err != nil {
 		return nil, fmt.Errorf("failed to create CA KeyCertBundle (%v)", err)
 	}
 

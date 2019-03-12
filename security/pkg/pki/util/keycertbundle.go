@@ -20,6 +20,7 @@ package util
 
 import (
 	"crypto"
+	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -44,7 +45,7 @@ type KeyCertBundle interface {
 
 	// VerifyAndSetAll verifies the key/certs, and sets all key/certs in KeyCertBundle together.
 	// Setting all values together avoids inconsistency.
-	VerifyAndSetAll(certBytes, privKeyBytes, certChainBytes, rootCertBytes []byte) error
+	VerifyAndSetAll(certBytes, privKeyBytes, certChainBytes, rootCertBytes []byte, privKey crypto.PrivateKey) error
 
 	// CertOptions returns the CertOptions for rotating the current key cert.
 	CertOptions() (*CertOptions, error)
@@ -67,10 +68,10 @@ type KeyCertBundleImpl struct {
 
 // NewVerifiedKeyCertBundleFromPem returns a new KeyCertBundle, or error if the provided certs failed the
 // verification.
-func NewVerifiedKeyCertBundleFromPem(certBytes, privKeyBytes, certChainBytes, rootCertBytes []byte) (
+func NewVerifiedKeyCertBundleFromPem(certBytes, privKeyBytes, certChainBytes, rootCertBytes []byte, privKey crypto.PrivateKey) (
 	*KeyCertBundleImpl, error) {
 	bundle := &KeyCertBundleImpl{}
-	if err := bundle.VerifyAndSetAll(certBytes, privKeyBytes, certChainBytes, rootCertBytes); err != nil {
+	if err := bundle.VerifyAndSetAll(certBytes, privKeyBytes, certChainBytes, rootCertBytes, privKey); err != nil {
 		return nil, err
 	}
 	return bundle, nil
@@ -78,15 +79,21 @@ func NewVerifiedKeyCertBundleFromPem(certBytes, privKeyBytes, certChainBytes, ro
 
 // NewVerifiedKeyCertBundleFromFile returns a new KeyCertBundle, or error if the provided certs failed the
 // verification.
-func NewVerifiedKeyCertBundleFromFile(certFile, privKeyFile, certChainFile, rootCertFile string) (
+func NewVerifiedKeyCertBundleFromFile(certFile, privKeyFile, certChainFile, rootCertFile string, privKey crypto.PrivateKey) (
 	*KeyCertBundleImpl, error) {
+
+	var privKeyBytes  []byte = nil
+	var err error
+
 	certBytes, err := ioutil.ReadFile(certFile)
 	if err != nil {
 		return nil, err
 	}
-	privKeyBytes, err := ioutil.ReadFile(privKeyFile)
-	if err != nil {
-		return nil, err
+	if len(privKeyFile) > 0 {
+		privKeyBytes, err = ioutil.ReadFile(privKeyFile)
+		if err != nil {
+			return nil, err
+		}
 	}
 	certChainBytes := []byte{}
 	if len(certChainFile) != 0 {
@@ -98,7 +105,7 @@ func NewVerifiedKeyCertBundleFromFile(certFile, privKeyFile, certChainFile, root
 	if err != nil {
 		return nil, err
 	}
-	return NewVerifiedKeyCertBundleFromPem(certBytes, privKeyBytes, certChainBytes, rootCertBytes)
+	return NewVerifiedKeyCertBundleFromPem(certBytes, privKeyBytes, certChainBytes, rootCertBytes, privKey)
 }
 
 // NewKeyCertBundleWithRootCertFromFile returns a new KeyCertBundle with the root cert without verification.
@@ -121,7 +128,11 @@ func NewKeyCertBundleWithRootCertFromFile(rootCertFile string) (*KeyCertBundleIm
 func (b *KeyCertBundleImpl) GetAllPem() (certBytes, privKeyBytes, certChainBytes, rootCertBytes []byte) {
 	b.mutex.RLock()
 	certBytes = copyBytes(b.certBytes)
-	privKeyBytes = copyBytes(b.privKeyBytes)
+	if b.privKeyBytes == nil {
+		privKeyBytes = nil
+	} else {
+		privKeyBytes = copyBytes(b.privKeyBytes)
+	}
 	certChainBytes = copyBytes(b.certChainBytes)
 	rootCertBytes = copyBytes(b.rootCertBytes)
 	b.mutex.RUnlock()
@@ -157,20 +168,28 @@ func (b *KeyCertBundleImpl) GetRootCertPem() []byte {
 
 // VerifyAndSetAll verifies the key/certs, and sets all key/certs in KeyCertBundle together.
 // Setting all values together avoids inconsistency.
-func (b *KeyCertBundleImpl) VerifyAndSetAll(certBytes, privKeyBytes, certChainBytes, rootCertBytes []byte) error {
-	if err := Verify(certBytes, privKeyBytes, certChainBytes, rootCertBytes); err != nil {
+func (b *KeyCertBundleImpl) VerifyAndSetAll(certBytes, privKeyBytes, certChainBytes, rootCertBytes []byte, inPrivKey crypto.PrivateKey) error {
+	if err := verify(certBytes, privKeyBytes, certChainBytes, rootCertBytes, inPrivKey); err != nil {
 		return err
 	}
 	b.mutex.Lock()
 	b.certBytes = copyBytes(certBytes)
-	b.privKeyBytes = copyBytes(privKeyBytes)
+	if privKeyBytes == nil {
+		b.privKeyBytes = nil 
+	} else {
+		b.privKeyBytes = copyBytes(privKeyBytes)
+	}
 	b.certChainBytes = copyBytes(certChainBytes)
 	b.rootCertBytes = copyBytes(rootCertBytes)
 	// cert and privKey are always reset to point to new addresses. This avoids modifying the pointed structs that
 	// could be still used outside of the class.
 	b.cert, _ = ParsePemEncodedCertificate(certBytes)
-	privKey, _ := ParsePemEncodedKey(privKeyBytes)
-	b.privKey = &privKey
+	if privKeyBytes == nil {
+		b.privKey = &inPrivKey
+	} else {
+		privKey, _ := ParsePemEncodedKey(privKeyBytes)
+		b.privKey = &privKey
+	}
 	b.mutex.Unlock()
 	return nil
 }
@@ -201,7 +220,7 @@ func (b *KeyCertBundleImpl) CertOptions() (*CertOptions, error) {
 }
 
 // Verify that the cert chain, root cert and key/cert match.
-func Verify(certBytes, privKeyBytes, certChainBytes, rootCertBytes []byte) error {
+func verify(certBytes, privKeyBytes, certChainBytes, rootCertBytes []byte, privKey crypto.PrivateKey) error {
 	// Verify the cert can be verified from the root cert through the cert chain.
 	rcp := x509.NewCertPool()
 	rcp.AppendCertsFromPEM(rootCertBytes)
@@ -223,6 +242,24 @@ func Verify(certBytes, privKeyBytes, certChainBytes, rootCertBytes []byte) error
 		return fmt.Errorf(
 			"cannot verify the cert with the provided root chain and cert "+
 				"pool with error: %v", err)
+	}
+
+	if privKeyBytes == nil {
+		// verify the public part of cert and key match
+		switch certPubKey := cert.PublicKey.(type) {
+		case *rsa.PublicKey:
+			if keyPubKey, ok := privKey.(crypto.Signer).Public().(*rsa.PublicKey); ok {
+				if certPubKey.E != keyPubKey.E || certPubKey.N.Cmp(keyPubKey.N) != 0 {
+					return fmt.Errorf("public key does not match private key")
+				}
+			} else {
+				return fmt.Errorf("failed to get public part of the key")
+			}
+	        default:
+		        return fmt.Errorf("Invalid key type")
+		}
+
+		return nil
 	}
 
 	// Verify that the key can be correctly parsed.

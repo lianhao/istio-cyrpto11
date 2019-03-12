@@ -482,9 +482,12 @@ func createCA(client corev1.CoreV1Interface) *ca.IstioCA {
 			} else {
 				fatalf("CA key validate failed (error: %v)", err)
 			}
+			caOpts, err = ca.NewPluggedCertIstioCAOptions(opts.certChainFile, opts.signingCertFile, "",
+				opts.rootCertFile, key, opts.workloadCertTTL, opts.maxWorkloadCertTTL, opts.istioCaStorageNamespace, client)
+		} else {
+			caOpts, err = ca.NewPluggedCertIstioCAOptions(opts.certChainFile, opts.signingCertFile, opts.signingKeyFile,
+				opts.rootCertFile, nil, opts.workloadCertTTL, opts.maxWorkloadCertTTL, opts.istioCaStorageNamespace, client)
 		}
-		caOpts, err = ca.NewPluggedCertIstioCAOptions(opts.certChainFile, opts.signingCertFile, opts.signingKeyFile,
-			opts.rootCertFile, opts.workloadCertTTL, opts.maxWorkloadCertTTL, opts.istioCaStorageNamespace, client)
 		if err != nil {
 			fatalf("Failed to create an Citadel (error: %v)", err)
 		}

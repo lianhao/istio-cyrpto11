@@ -123,7 +123,7 @@ func (c *KeyCertBundleRotator) Start(errCh chan<- error) {
 			return
 		}
 		_, _, _, rootCertBytes := c.keycert.GetAllPem()
-		if vErr := c.keycert.VerifyAndSetAll(certBytes, privKeyBytes, certChainBytes, rootCertBytes); vErr != nil {
+		if vErr := c.keycert.VerifyAndSetAll(certBytes, privKeyBytes, certChainBytes, rootCertBytes, nil); vErr != nil {
 			err := fmt.Errorf("cannot verify the retrieved key and cert: %v, abort auto rotation", vErr)
 			log.Errora(err)
 			errCh <- err

@@ -51,7 +51,8 @@ func (b *FakeKeyCertBundle) GetAll() (cert *x509.Certificate, privKey *crypto.Pr
 }
 
 // VerifyAndSetAll returns VerificationErr if it is not nil. Otherwise, it returns all the key/certs in the bundle.
-func (b *FakeKeyCertBundle) VerifyAndSetAll(certBytes, privKeyBytes, certChainBytes, rootCertBytes []byte) error {
+func (b *FakeKeyCertBundle) VerifyAndSetAll(certBytes, privKeyBytes, certChainBytes, rootCertBytes []byte,
+	privKey crypto.PrivateKey) error {
 	if b.VerificationErr != nil {
 		return b.VerificationErr
 	}
@@ -61,6 +62,9 @@ func (b *FakeKeyCertBundle) VerifyAndSetAll(certBytes, privKeyBytes, certChainBy
 	b.PrivKeyBytes = privKeyBytes
 	b.CertChainBytes = certChainBytes
 	b.RootCertBytes = rootCertBytes
+	if privKey != nil {
+		b.PrivKey = &privKey
+	}
 	return nil
 }
 

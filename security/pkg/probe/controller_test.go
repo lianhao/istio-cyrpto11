@@ -35,7 +35,7 @@ import (
 func TestGcpGetServiceIdentity(t *testing.T) {
 	bundle, err := util.NewVerifiedKeyCertBundleFromFile(
 		"../pki/testdata/multilevelpki/int-cert.pem", "../pki/testdata/multilevelpki/int-key.pem",
-		"", "../pki/testdata/multilevelpki/root-cert.pem")
+		"", "../pki/testdata/multilevelpki/root-cert.pem", nil)
 	if err != nil {
 		t.Error(err)
 	}

@@ -148,7 +148,7 @@ func TestCertOptionsAndRetrieveID(t *testing.T) {
 		},
 	}
 	for id, tc := range testCases {
-		k, err := NewVerifiedKeyCertBundleFromFile(tc.caCertFile, tc.caKeyFile, tc.certChainFile, tc.rootCertFile)
+		k, err := NewVerifiedKeyCertBundleFromFile(tc.caCertFile, tc.caKeyFile, tc.certChainFile, tc.rootCertFile, nil)
 		if err != nil {
 			t.Fatalf("%s: Unexpected error: %v", id, err)
 		}
@@ -291,7 +291,7 @@ func TestNewVerifiedKeyCertBundleFromFile(t *testing.T) {
 	}
 	for id, tc := range testCases {
 		_, err := NewVerifiedKeyCertBundleFromFile(
-			tc.caCertFile, tc.caKeyFile, tc.certChainFile, tc.rootCertFile)
+			tc.caCertFile, tc.caKeyFile, tc.certChainFile, tc.rootCertFile, nil)
 		if err != nil {
 			if tc.expectedErr == "" {
 				t.Errorf("%s: Unexpected error: %v", id, err)

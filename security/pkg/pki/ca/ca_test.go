@@ -315,7 +315,7 @@ func TestCreatePluggedCertCA(t *testing.T) {
 	client := fake.NewSimpleClientset()
 
 	caopts, err := NewPluggedCertIstioCAOptions(certChainFile, signingCertFile, signingKeyFile, rootCertFile,
-		defaultWorkloadCertTTL, maxWorkloadCertTTL, caNamespace, client.CoreV1())
+		nil, defaultWorkloadCertTTL, maxWorkloadCertTTL, caNamespace, client.CoreV1())
 	if err != nil {
 		t.Fatalf("Failed to create a plugged-cert CA Options: %v", err)
 	}
@@ -538,7 +538,7 @@ func createCA(maxTTL time.Duration, multicluster bool) (*IstioCA, error) {
 	}
 
 	bundle, err := util.NewVerifiedKeyCertBundleFromPem(
-		intermediateCert, intermediateKey, intermediateCert, rootCertBytes)
+		intermediateCert, intermediateKey, intermediateCert, rootCertBytes, nil)
 	if err != nil {
 		return nil, err
 	}

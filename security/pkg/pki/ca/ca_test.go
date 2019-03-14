@@ -19,6 +19,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"crypto"
 	"encoding/base64"
 	"encoding/pem"
 	"io/ioutil"
@@ -488,7 +489,118 @@ func TestSignCSRForWorkload(t *testing.T) {
 	}
 }
 
+func TestSignCSRForProtectedWorkload(t *testing.T) {
+	subjectID := "spiffe://example.com/ns/foo/sa/bar"
+	opts := util.CertOptions{
+		// This value is not used, instead, subjectID should be used in certificate.
+		Host:       "spiffe://different.com/test",
+		RSAKeySize: 2048,
+		IsCA:       false,
+	}
+	csrPEM, keyPEM, err := util.GenCSR(opts)
+	if err != nil {
+		t.Error(err)
+	}
+
+	ca, err := createCA(time.Hour)
+	if err != nil {
+		t.Error(err)
+	}
+
+	requestedTTL := 30 * time.Minute
+	certPEM, signErr := ca.Sign(csrPEM, []string{subjectID}, requestedTTL, false)
+	if signErr != nil {
+		t.Error(err)
+	}
+
+	fields := &util.VerifyFields{
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		IsCA:        false,
+		Host:        subjectID,
+	}
+	_, _, certChainBytes, rootCertBytes := ca.GetCAKeyCertBundle().GetAll()
+	if err = util.VerifyCertificate(
+		keyPEM, append(certPEM, certChainBytes...), rootCertBytes, fields); err != nil {
+		t.Error(err)
+	}
+
+	cert, err := util.ParsePemEncodedCertificate(certPEM)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if ttl := cert.NotAfter.Sub(cert.NotBefore); ttl != requestedTTL {
+		t.Errorf("Unexpected certificate TTL (expecting %v, actual %v)", requestedTTL, ttl)
+	}
+	san := util.ExtractSANExtension(cert.Extensions)
+	if san == nil {
+		t.Errorf("No SAN extension is found in the certificate")
+	}
+	expected, err := util.BuildSubjectAltNameExtension(subjectID)
+	if err != nil {
+		t.Error(err)
+	}
+	if !reflect.DeepEqual(expected, san) {
+		t.Errorf("Unexpected extensions: wanted %v but got %v", expected, san)
+	}
+}
+
 func TestSignCSRForCA(t *testing.T) {
+	subjectID := "spiffe://example.com/ns/foo/sa/baz"
+	opts := util.CertOptions{
+		RSAKeySize: 2048,
+		IsCA:       true,
+	}
+	csrPEM, keyPEM, err := util.GenCSR(opts)
+	if err != nil {
+		t.Error(err)
+	}
+
+	ca, err := createCA(365 * 24 * time.Hour)
+	if err != nil {
+		t.Error(err)
+	}
+
+	requestedTTL := 30 * 24 * time.Hour
+	certPEM, signErr := ca.Sign(csrPEM, []string{subjectID}, requestedTTL, true)
+	if signErr != nil {
+		t.Error(err)
+	}
+
+	fields := &util.VerifyFields{
+		KeyUsage: x509.KeyUsageCertSign,
+		IsCA:     true,
+		Host:     subjectID,
+	}
+	_, _, certChainBytes, rootCertBytes := ca.GetCAKeyCertBundle().GetAll()
+	if err = util.VerifyCertificate(
+		keyPEM, append(certPEM, certChainBytes...), rootCertBytes, fields); err != nil {
+		t.Error(err)
+	}
+
+	cert, err := util.ParsePemEncodedCertificate(certPEM)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if ttl := cert.NotAfter.Sub(cert.NotBefore); ttl != requestedTTL {
+		t.Errorf("Unexpected certificate TTL (expecting %v, actual %v)", requestedTTL, ttl)
+	}
+	san := util.ExtractSANExtension(cert.Extensions)
+	if san == nil {
+		t.Errorf("No SAN extension is found in the certificate")
+	}
+	expected, err := util.BuildSubjectAltNameExtension(subjectID)
+	if err != nil {
+		t.Error(err)
+	}
+	if !reflect.DeepEqual(expected, san) {
+		t.Errorf("Unexpected extensions: wanted %v but got %v", expected, san)
+	}
+}
+
+func TestSignCSRForProtectedCA(t *testing.T) {
 	subjectID := "spiffe://example.com/ns/foo/sa/baz"
 	opts := util.CertOptions{
 		RSAKeySize: 2048,
@@ -688,11 +800,30 @@ func createCA(maxTTL time.Duration) (*IstioCA, error) {
 		return nil, err
 	}
 
+	var key crypto.PrivateKey  = nil
+	var keyBytes []byte = nil
+	if protected {
+		bl, _ := pem.Decode(intermediateKey)
+		if bl == nil {
+			return nil, nil
+			//t.Fatalf("Failed to decode the private pem bytes: %v", err)
+		}
+
+		k, err := x509.ParsePKCS1PrivateKey(bl.Bytes)
+		if err != nil {
+			return nil, err
+		}
+		key = k
+	} else {
+		keyBytes = intermediateKey
+	}
+
 	bundle, err := util.NewVerifiedKeyCertBundleFromPem(
-		intermediateCert, intermediateKey, intermediateCert, rootCertBytes, nil)
+		intermediateCert, keyBytes, intermediateCert, rootCertBytes, key)
 	if err != nil {
 		return nil, err
 	}
+
 	caOpts := &IstioCAOptions{
 		CertTTL:       time.Hour,
 		MaxCertTTL:    maxTTL,

@@ -20,6 +20,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/pem"
 	"io/ioutil"
 	"reflect"
 	"testing"
@@ -299,6 +300,77 @@ func TestCreateSelfSignedIstioCAReadSigningCertOnly(t *testing.T) {
 
 	if len(certChainBytesFromCA) != 0 {
 		t.Errorf("Cert chain should be empty")
+	}
+}
+
+func TestCreateProtectedPluggedCertCA(t *testing.T) {
+	rootCertFile := "../testdata/multilevelpki/root-cert.pem"
+	certChainFile := "../testdata/multilevelpki/int2-cert-chain.pem"
+	signingCertFile := "../testdata/multilevelpki/int2-cert.pem"
+	signingKeyFile := "../testdata/multilevelpki/int2-key.pem"
+	caNamespace := "default"
+
+	defaultWorkloadCertTTL := 30 * time.Minute
+	maxWorkloadCertTTL := time.Hour
+
+	client := fake.NewSimpleClientset()
+
+	keyPEM, err := ioutil.ReadFile(signingKeyFile)
+	if err != nil {
+		t.Fatalf("Failed to read the private key file: %v", err)
+	}
+
+	bl, _ := pem.Decode(keyPEM)
+	if bl == nil {
+		t.Fatalf("Failed to decode the private pem bytes: %v", err)
+	}
+
+	key, err := x509.ParsePKCS1PrivateKey(bl.Bytes)
+	if err != nil {
+		t.Fatalf("Failed to parse the private key: %v", err)
+	}
+
+	caopts, err := NewPluggedCertIstioCAOptions(certChainFile, signingCertFile, "", rootCertFile,
+		key, defaultWorkloadCertTTL, maxWorkloadCertTTL, caNamespace, client.CoreV1())
+	if err != nil {
+		t.Fatalf("Failed to create a plugged-cert CA Options: %v", err)
+	}
+
+	ca, err := NewIstioCA(caopts)
+	if err != nil {
+		t.Errorf("Got error while createing plugged-cert CA: %v", err)
+	}
+	if ca == nil {
+		t.Fatalf("Failed to create a plugged-cert CA.")
+	}
+
+	signingCertBytes, signingKeyBytes, certChainBytes, rootCertBytes := ca.GetCAKeyCertBundle().GetAllPem()
+	if !comparePem(signingCertBytes, signingCertFile) {
+		t.Errorf("Failed to verify loading of signing cert pem.")
+	}
+	if signingKeyBytes != nil {
+		t.Errorf("Failed with unexpected private key bytes")
+	}
+	if !comparePem(certChainBytes, certChainFile) {
+		t.Errorf("Failed to verify loading of cert chain pem.")
+	}
+	if !comparePem(rootCertBytes, rootCertFile) {
+		t.Errorf("Failed to verify loading of root cert pem.")
+	}
+
+	// Check the siging cert stored in K8s configmap.
+	cmc := configmap.NewController(caNamespace, client.CoreV1())
+	strCertFromConfigMap, err := cmc.GetCATLSRootCert()
+	if err != nil {
+		t.Errorf("Cannot get the CA cert from configmap (%v)", err)
+	}
+	_, _, _, cert := ca.GetCAKeyCertBundle().GetAllPem()
+	certFromConfigMap, err := base64.StdEncoding.DecodeString(strCertFromConfigMap)
+	if err != nil {
+		t.Errorf("Cannot decode the CA cert from configmap (%v)", err)
+	}
+	if !bytes.Equal(cert, certFromConfigMap) {
+		t.Errorf("The cert in configmap is not equal to the CA signing cert: %v VS (expected) %v", certFromConfigMap, cert)
 	}
 }
 

@@ -57,6 +57,8 @@ $(foreach FILE,$(DOCKER_FILES_FROM_ISTIO_OUT_LINUX), \
 $(ISTIO_DOCKER)/certs:
 	cp -a tests/testdata/certs $(ISTIO_DOCKER)/.
 
+$(ISTIO_DOCKER)/import.sh:
+	cp security/docker/import.sh ${ISTIO_DOCKER}/import.sh
 # tell make which files are copied from the source tree and generate rules to copy them to the proper location:
 # TODO(sdake)                      $(NODE_AGENT_TEST_FILES) $(GRAFANA_FILES)
 DOCKER_FILES_FROM_SOURCE:=tools/packaging/common/istio-iptables.sh docker/ca-certificates.tgz \
@@ -233,6 +235,13 @@ docker.citadel-test: security/docker/Dockerfile.citadel-test
 docker.citadel-test: $(ISTIO_DOCKER)/istio_ca
 docker.citadel-test: $(ISTIO_DOCKER)/istio_ca.crt
 docker.citadel-test: $(ISTIO_DOCKER)/istio_ca.key
+	$(DOCKER_RULE)
+
+docker.citadel-softhsm-test: security/docker/Dockerfile.citadel-softhsm-test
+docker.citadel-softhsm-test: $(ISTIO_DOCKER)/istio_ca
+docker.citadel-softhsm-test: $(ISTIO_DOCKER)/istio_ca.crt
+docker.citadel-softhsm-test: $(ISTIO_DOCKER)/istio_ca.key
+docker.citadel-softhsm-test: $(ISTIO_DOCKER)/import.sh
 	$(DOCKER_RULE)
 
 docker.node-agent: BUILD_ARGS=--build-arg BASE_VERSION=${BASE_VERSION}

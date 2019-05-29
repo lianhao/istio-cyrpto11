@@ -175,7 +175,7 @@ func (b *KeyCertBundleImpl) VerifyAndSetAll(certBytes, privKeyBytes, certChainBy
 	b.mutex.Lock()
 	b.certBytes = copyBytes(certBytes)
 	if privKeyBytes == nil {
-		b.privKeyBytes = nil 
+		b.privKeyBytes = nil
 	} else {
 		b.privKeyBytes = copyBytes(privKeyBytes)
 	}

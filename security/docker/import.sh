@@ -27,11 +27,11 @@ softhsm2-util --init-token --slot ${slot_no} --label "${token_name}" \
 openssl pkcs8 -inform PEM -outform DER -in $1 -out /tmp/prikey.der -nocrypt
 #Import the private key and cert into SoftHSM
 pkcs11-tool --module $libpath -l --pin ${upin} \
-    --write-object /tmp/prikey.der --type privkey --id ${key_id} --label ${key_label} 
+    --write-object /tmp/prikey.der --type privkey --id ${key_id} --label ${key_label}
 rm -f /tmp/prikey.der
 
 openssl x509 -inform PEM -in $2 -outform PEM -pubkey -noout >& /tmp/pubkey.pem
-openssl rsa -pubin -inform PEM -in /tmp/pubkey.pem -outform DER -out /tmp/pubkey.der 
+openssl rsa -pubin -inform PEM -in /tmp/pubkey.pem -outform DER -out /tmp/pubkey.der
 
 pkcs11-tool --module $libpath -l --pin ${upin} \
     --write-object /tmp/pubkey.der --type pubkey --id ${key_id} --label ${key_label}

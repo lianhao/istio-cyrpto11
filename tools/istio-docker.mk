@@ -22,8 +22,8 @@
 docker: build-linux test-bins-linux docker.all
 
 # Add new docker targets to the end of the DOCKER_TARGETS list.
-DOCKER_TARGETS:=docker.pilot docker.proxy_debug docker.proxytproxy docker.proxyv2 docker.app docker.app_sidecar docker.test_policybackend \
-	docker.proxy_init docker.mixer docker.mixer_codegen docker.citadel docker.galley docker.sidecar_injector docker.kubectl docker.node-agent-k8s
+DOCKER_TARGETS:=docker.pilot docker.proxy_debug docker.proxytproxy docker.proxyv2 docker.app docker.test_policybackend \
+	docker.proxy_init docker.servicegraph docker.mixer docker.mixer_codegen docker.citadel docker.citadel-softhsm-test docker.galley docker.sidecar_injector docker.kubectl docker.node-agent-k8s
 
 $(ISTIO_DOCKER) $(ISTIO_DOCKER_TAR):
 	mkdir -p $@

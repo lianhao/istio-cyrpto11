@@ -423,7 +423,8 @@ func runCA() {
 func createCA(client corev1.CoreV1Interface) *ca.IstioCA {
 	var caOpts *ca.IstioCAOptions
 	var err error
-	var key crypto.PrivateKey
+	var key crypto.Signer
+	var c *crypto11.Context
 
 	if opts.selfSignedCA {
 		log.Info("Use self-signed certificate as the CA certificate")
@@ -450,18 +451,20 @@ func createCA(client corev1.CoreV1Interface) *ca.IstioCA {
 			if err := importCAKey(); err != nil {
 				fatalf("Failed to import CA key (error: %v)", err)
 			}
-			if _, err := crypto11.ConfigureFromFile("/tmp/config");  err != nil {
+			if c, err = crypto11.ConfigureFromFile("/tmp/config");  err != nil {
 				fatalf("PKCS11 config from file failed (error: %v)", err)
 			}
-			if key, err = crypto11.FindKeyPair(nil, []byte(opts.protectedCAKeyLabel)); err != nil {
+			if key, err = c.FindKeyPair(nil, []byte(opts.protectedCAKeyLabel)); err != nil {
 				fatalf("Failed to find CA key (error: %v)", err)
 			}
-			log.Info("Found the key")
-			if _, ok := key.(crypto.Signer).Public().(*rsa.PublicKey); ok {
-				log.Info("Found key is valid")
-			} else {
-				fatalf("CA key validate failed (error: %v)", err)
+			if key == nil {
+				fatalf("failed to find the key")
 			}
+			log.Info("Found the key")
+
+			if _, ok := key.Public().(*rsa.PublicKey); ok {
+				log.Info("public part of the found key is ok")
+                        }
 			caOpts, err = ca.NewPluggedCertIstioCAOptions(opts.certChainFile, opts.signingCertFile, "",
 				opts.rootCertFile, key, opts.workloadCertTTL, opts.maxWorkloadCertTTL, opts.istioCaStorageNamespace, client)
 		} else {

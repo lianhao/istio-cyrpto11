@@ -30,10 +30,18 @@ $(ISTIO_DOCKER) $(ISTIO_DOCKER_TAR):
 .SECONDEXPANSION: #allow $@ to be used in dependency list
 
 # generated content
-$(ISTIO_DOCKER)/istio_ca.crt $(ISTIO_DOCKER)/istio_ca.key: ${GEN_CERT} | ${ISTIO_DOCKER}
-	${GEN_CERT} --key-size=2048 --out-cert=${ISTIO_DOCKER}/istio_ca.crt \
-                    --out-priv=${ISTIO_DOCKER}/istio_ca.key --organization="k8s.cluster.local" \
-                    --mode=self-signed --ca=true
+#$(ISTIO_DOCKER)/istio_ca.crt $(ISTIO_DOCKER)/istio_ca.key: ${GEN_CERT} | ${ISTIO_DOCKER}
+#	${GEN_CERT} --key-size=2048 --out-cert=${ISTIO_DOCKER}/istio_ca.crt \
+#                    --out-priv=${ISTIO_DOCKER}/istio_ca.key --organization="k8s.cluster.local" \
+#                    --mode=self-signed --ca=true
+
+# need to revist this for now use test-pre generated keys
+
+$(ISTIO_DOCKER)/istio_ca.key:
+	cp security/docker/istio_ca.key ${ISTIO_DOCKER}/istio_ca.key
+$(ISTIO_DOCKER)/istio_ca.crt: ${GEN_CERT} | ${ISTIO_DOCKER
+	cp security/docker/istio_ca.crt ${ISTIO_DOCKER}/istio_ca.crt
+
 $(ISTIO_DOCKER)/node_agent.crt $(ISTIO_DOCKER)/node_agent.key: ${GEN_CERT} $(ISTIO_DOCKER)/istio_ca.crt $(ISTIO_DOCKER)/istio_ca.key
 	${GEN_CERT} --key-size=2048 --out-cert=${ISTIO_DOCKER}/node_agent.crt \
                     --out-priv=${ISTIO_DOCKER}/node_agent.key --organization="NodeAgent" \

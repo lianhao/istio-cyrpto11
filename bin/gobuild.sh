@@ -45,6 +45,7 @@ GCFLAGS=${GCFLAGS:-}
 
 if [[ "$BUILDPATH" == "./security/cmd/istio_ca" ]];then
 	export CGO_ENABLED=1
+	STATIC=0
 else
 	export CGO_ENABLED=0
 fi

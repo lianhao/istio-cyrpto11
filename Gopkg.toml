@@ -366,4 +366,8 @@ ignored = [
 
 [[override]]
   name = "github.com/ThalesIgnite/crypto11"
-  revision = "c73933259cb60509d00f32306eea53d10f8e8f10"
+  revision = "50674a7748b0ede3c9137f2018714ade73bbd37a"
+
+[[override]]
+  name = "github.com/pkg/errors"
+  revision = "27936f6d90f9c8e1145f11ed52ffffbfdb9e0af7"

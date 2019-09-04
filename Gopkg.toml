@@ -369,5 +369,9 @@ ignored = [
   revision = "50674a7748b0ede3c9137f2018714ade73bbd37a"
 
 [[override]]
+  name = "github.com/miekg/pkcs11"
+  revision = "210dc1e16747c5ba98a03bcbcf728c38086ea357"
+
+[[override]]
   name = "github.com/pkg/errors"
   revision = "27936f6d90f9c8e1145f11ed52ffffbfdb9e0af7"

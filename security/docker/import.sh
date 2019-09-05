@@ -1,11 +1,11 @@
 #!/bin/bash
 
 #input args
-# $1 - key file path 
-# $2 - cert file path 
-# $3 - key label 
-# $4 - key id 
-# $5 - token pin 
+# $1 - key file path
+# $2 - cert file path
+# $3 - key label
+# $4 - key id
+# $5 - token pin
 
 #User pin
 upin=$5
@@ -49,7 +49,7 @@ cat <<EOF > /tmp/config
 {
   "Path" : "$libpath",
   "TokenLabel": "$token_name",
-  "Pin" : "$upin" 
+  "Pin" : "$upin"
 }
 EOF
 

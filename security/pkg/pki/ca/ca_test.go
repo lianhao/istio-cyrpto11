@@ -365,7 +365,7 @@ func TestCreateProtectedPluggedCertCA(t *testing.T) {
 	if err != nil {
 		t.Errorf("Cannot get the CA cert from configmap (%v)", err)
 	}
-	_, _, _, cert := ca.GetCAKeyCertBundle().GetAllPem()
+	_, _, cert, _ := ca.GetCAKeyCertBundle().GetAllPem()
 	certFromConfigMap, err := base64.StdEncoding.DecodeString(strCertFromConfigMap)
 	if err != nil {
 		t.Errorf("Cannot decode the CA cert from configmap (%v)", err)
@@ -445,7 +445,7 @@ func TestSignCSRForWorkload(t *testing.T) {
 		t.Error(err)
 	}
 
-	ca, err := createCA(time.Hour)
+	ca, err := createCA(time.Hour, false)
 	if err != nil {
 		t.Error(err)
 	}
@@ -502,7 +502,7 @@ func TestSignCSRForProtectedWorkload(t *testing.T) {
 		t.Error(err)
 	}
 
-	ca, err := createCA(time.Hour)
+	ca, err := createCA(time.Hour, true)
 	if err != nil {
 		t.Error(err)
 	}
@@ -557,7 +557,7 @@ func TestSignCSRForCA(t *testing.T) {
 		t.Error(err)
 	}
 
-	ca, err := createCA(365 * 24 * time.Hour)
+	ca, err := createCA(365 * 24 * time.Hour, false)
 	if err != nil {
 		t.Error(err)
 	}
@@ -611,7 +611,7 @@ func TestSignCSRForProtectedCA(t *testing.T) {
 		t.Error(err)
 	}
 
-	ca, err := createCA(365 * 24 * time.Hour)
+	ca, err := createCA(365 * 24 * time.Hour, true)
 	if err != nil {
 		t.Error(err)
 	}
@@ -665,7 +665,7 @@ func TestSignCSRTTLError(t *testing.T) {
 		t.Error(err)
 	}
 
-	ca, err := createCA(2 * time.Hour)
+	ca, err := createCA(2 * time.Hour, false)
 	if err != nil {
 		t.Error(err)
 	}
@@ -722,7 +722,7 @@ func TestSignWithCertChain(t *testing.T) {
 
 	client := fake.NewSimpleClientset()
 
-	caopts, err := NewPluggedCertIstioCAOptions(certChainFile, signingCertFile, signingKeyFile, rootCertFile,
+	caopts, err := NewPluggedCertIstioCAOptions(certChainFile, signingCertFile, signingKeyFile, rootCertFile, nil,
 		defaultWorkloadCertTTL, maxWorkloadCertTTL, caNamespace, client.CoreV1())
 	if err != nil {
 		t.Fatalf("Failed to create a plugged-cert CA Options: %v", err)
@@ -762,7 +762,7 @@ func TestSignWithCertChain(t *testing.T) {
 	}
 }
 
-func createCA(maxTTL time.Duration) (*IstioCA, error) {
+func createCA(maxTTL time.Duration, protected bool) (*IstioCA, error) {
 	// Generate root CA key and cert.
 	rootCAOpts := util.CertOptions{
 		IsCA:         true,

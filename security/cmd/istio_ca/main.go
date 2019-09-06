@@ -201,11 +201,7 @@ func initCLI() {
 	flags.DurationVar(&opts.selfSignedCACertTTL, "self-signed-ca-cert-ttl", cmd.DefaultSelfSignedCACertTTL,
 		"The TTL of self-signed CA root certificate.")
 	flags.StringVar(&opts.trustDomain, "trust-domain", "",
-<<<<<<< HEAD
 		"The domain serves to identify the system with SPIFFE.")
-=======
-		"The domain serves to identify the system with spiffe ")
->>>>>>> Initial changes for CA key protection using SoftHSM
 	// Configuration if Citadel accepts protected key configured through arguments.
 	flags.BoolVar(&opts.protectedCAKey, "protected-ca-key", false,
 		"Indicates to use pkcs11 protected CA key. ")

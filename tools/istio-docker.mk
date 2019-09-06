@@ -21,9 +21,8 @@
 # It does not upload to a registry.
 docker: build-linux test-bins-linux docker.all
 
-# Add new docker targets to the end of the DOCKER_TARGETS list.
-DOCKER_TARGETS:=docker.pilot docker.proxy_debug docker.proxytproxy docker.proxyv2 docker.app docker.test_policybackend \
-	docker.proxy_init docker.servicegraph docker.mixer docker.mixer_codegen docker.citadel docker.citadel-softhsm-test docker.galley docker.sidecar_injector docker.kubectl docker.node-agent-k8s
+DOCKER_TARGETS:=docker.pilot docker.proxy_debug docker.proxytproxy docker.proxyv2 docker.app docker.app_sidecar docker.test_policybackend \
+        docker.proxy_init docker.mixer docker.mixer_codegen docker.citadel docker.citadel-softhsm-test docker.galley docker.sidecar_injector docker.kubectl docker.node-agent-k8s
 
 $(ISTIO_DOCKER) $(ISTIO_DOCKER_TAR):
 	mkdir -p $@
@@ -40,7 +39,7 @@ $(ISTIO_DOCKER) $(ISTIO_DOCKER_TAR):
 
 $(ISTIO_DOCKER)/istio_ca.key:
 	cp security/docker/istio_ca.key ${ISTIO_DOCKER}/istio_ca.key
-$(ISTIO_DOCKER)/istio_ca.crt: ${GEN_CERT} | ${ISTIO_DOCKER
+$(ISTIO_DOCKER)/istio_ca.crt: ${GEN_CERT} | ${ISTIO_DOCKER}
 	cp security/docker/istio_ca.crt ${ISTIO_DOCKER}/istio_ca.crt
 
 $(ISTIO_DOCKER)/node_agent.crt $(ISTIO_DOCKER)/node_agent.key: ${GEN_CERT} $(ISTIO_DOCKER)/istio_ca.crt $(ISTIO_DOCKER)/istio_ca.key

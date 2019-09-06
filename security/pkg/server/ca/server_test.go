@@ -114,7 +114,7 @@ func TestExtractRootCertExpiryTimestamp(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to gen cert for Citadel self signed cert %v", err)
 	}
-	kb, err := pkiutil.NewVerifiedKeyCertBundleFromPem(cert, key, nil, cert)
+	kb, err := pkiutil.NewVerifiedKeyCertBundleFromPem(cert, key, nil, cert, nil)
 	if err != nil {
 		t.Errorf("failed to create key cert bundle %v", err)
 	}
@@ -511,7 +511,7 @@ func TestGetServerCertificate(t *testing.T) {
 
 	client := fake.NewSimpleClientset()
 
-	caopts, err := ca.NewPluggedCertIstioCAOptions(certChainFile, signingCertFile, signingKeyFile, rootCertFile,
+	caopts, err := ca.NewPluggedCertIstioCAOptions(certChainFile, signingCertFile, signingKeyFile, rootCertFile, nil,
 		defaultWorkloadCertTTL, maxWorkloadCertTTL, caNamespace, client.CoreV1())
 	if err != nil {
 		t.Fatalf("Failed to create a plugged-cert CA Options: %v", err)

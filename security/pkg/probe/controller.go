@@ -187,7 +187,7 @@ func (c *LivenessCheckController) checkGrpcServer() error {
 	if !resp.IsApproved {
 		return fmt.Errorf("CSR sign failure: request is not approaved")
 	}
-	if vErr := util.Verify(resp.SignedCert, privKeyBytes, resp.CertChain, rootCertBytes); vErr != nil {
+	if vErr := util.Verify(resp.SignedCert, privKeyBytes, resp.CertChain, rootCertBytes, nil); vErr != nil {
 		err := fmt.Errorf("CSR sign failure: %v", vErr)
 		log.Errora(err)
 		return err

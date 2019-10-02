@@ -37,6 +37,14 @@ $(ISTIO_DOCKER) $(ISTIO_DOCKER_TAR):
 
 # need to revist this for now use test-pre generated keys
 
+$(ISTIO_DOCKER)/ca-root.cert.pem:
+	cp security/docker/ca-root.cert.pem ${ISTIO_DOCKER}/ca-root.cert.pem
+$(ISTIO_DOCKER)/ca-chain.cert.pem:
+	cp security/docker/ca-chain.cert.pem ${ISTIO_DOCKER}/ca-chain.cert.pem
+$(ISTIO_DOCKER)/intermediate.cert.pem:
+	cp security/docker/intermediate.cert.pem ${ISTIO_DOCKER}/intermediate.cert.pem
+$(ISTIO_DOCKER)/intermediate.key.pem:
+	cp security/docker/intermediate.key.pem ${ISTIO_DOCKER}/intermediate.key.pem
 $(ISTIO_DOCKER)/istio_ca.key:
 	cp security/docker/istio_ca.key ${ISTIO_DOCKER}/istio_ca.key
 $(ISTIO_DOCKER)/istio_ca.crt: ${GEN_CERT} | ${ISTIO_DOCKER}
@@ -235,6 +243,10 @@ docker.citadel: BUILD_ARGS=--build-arg BASE_VERSION=${BASE_VERSION}
 docker.citadel: security/docker/Dockerfile.citadel
 docker.citadel: $(ISTIO_DOCKER)/istio_ca
 docker.citadel: $(ISTIO_DOCKER)/ca-certificates.tgz
+docker.citadel: $(ISTIO_DOCKER)/ca-chain.cert.pem
+docker.citadel: $(ISTIO_DOCKER)/ca-root.cert.pem
+docker.citadel: $(ISTIO_DOCKER)/intermediate.cert.pem
+docker.citadel: $(ISTIO_DOCKER)/intermediate.key.pem
 	$(DOCKER_RULE)
 
 docker.citadel-test: BUILD_ARGS=--build-arg BASE_VERSION=${BASE_VERSION}
@@ -249,6 +261,10 @@ docker.citadel-softhsm-test: $(ISTIO_DOCKER)/istio_ca
 docker.citadel-softhsm-test: $(ISTIO_DOCKER)/istio_ca.crt
 docker.citadel-softhsm-test: $(ISTIO_DOCKER)/istio_ca.key
 docker.citadel-softhsm-test: $(ISTIO_DOCKER)/import.sh
+docker.citadel-softhsm-test: $(ISTIO_DOCKER)/ca-chain.cert.pem
+docker.citadel-softhsm-test: $(ISTIO_DOCKER)/ca-root.cert.pem
+docker.citadel-softhsm-test: $(ISTIO_DOCKER)/intermediate.cert.pem
+docker.citadel-softhsm-test: $(ISTIO_DOCKER)/intermediate.key.pem
 	$(DOCKER_RULE)
 
 docker.node-agent: BUILD_ARGS=--build-arg BASE_VERSION=${BASE_VERSION}

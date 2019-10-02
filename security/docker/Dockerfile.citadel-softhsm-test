@@ -1,8 +1,5 @@
 FROM ubuntu:xenial
 
-ENV http_proxy http://proxy-us.intel.com:911
-ENV https_proxy https://proxy-us.intel.com:911
-
 RUN apt-get update
 
 RUN apt-get install -y softhsm
@@ -21,13 +18,10 @@ ADD istio_ca /usr/local/bin/istio_ca
 COPY istio_ca.crt /usr/local/bin/istio_ca.crt
 COPY istio_ca.key /usr/local/bin/istio_ca.key
 
+COPY ca-chain.cert.pem /usr/local/bin/ca-chain.cert.pem
+COPY ca-root.cert.pem /usr/local/bin/ca-root.cert.pem
+COPY intermediate.cert.pem /usr/local/bin/intermediate.cert.pem
+COPY intermediate.key.pem /usr/local/bin/intermediate.key.pem
 
-ENTRYPOINT [ "/usr/local/bin/istio_ca", \
-"--protected-ca-key", \
-"--protected-ca-key-label", "catestkey", \
-"--protected-ca-key-id", "13107", \
-"--protected-token-pin", "999999999", \
-"--signing-cert", "/usr/local/bin/istio_ca.crt", \
-"--signing-key", "/usr/local/bin/istio_ca.key", \
-"--root-cert", "/usr/local/bin/istio_ca.crt", \
-"--grpc-port", "8060" ]
+
+ENTRYPOINT [ "/usr/local/bin/istio_ca" ]

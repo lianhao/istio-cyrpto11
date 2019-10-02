@@ -22,4 +22,9 @@ FROM ${BASE_DISTRIBUTION}
 WORKDIR /tmp/
 COPY istio_ca /usr/local/bin/istio_ca
 
-ENTRYPOINT [ "/usr/local/bin/istio_ca", "--self-signed-ca" ]
+COPY ca-chain.cert.pem /usr/local/bin/ca-chain.cert.pem
+COPY ca-root.cert.pem /usr/local/bin/ca-root.cert.pem
+COPY intermediate.cert.pem /usr/local/bin/intermediate.cert.pem
+COPY intermediate.key.pem /usr/local/bin/intermediate.key.pem
+
+ENTRYPOINT [ "/usr/local/bin/istio_ca" ]

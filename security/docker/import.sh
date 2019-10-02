@@ -6,6 +6,8 @@
 # $3 - key label
 # $4 - key id
 # $5 - token pin
+# $6 - root cert file path
+# $7 - cert chain file path
 
 #User pin
 upin=$5
@@ -40,9 +42,14 @@ openssl x509 -in $2 -outform der -out /tmp/ca.der
 pkcs11-tool --module $libpath -l --pin ${upin} \
     --write-object /tmp/ca.der --type cert --id ${key_id} --label ${key_label}
 
+openssl x509 -in $6 -outform der -out /tmp/root.der
+pkcs11-tool --module $libpath -l --pin ${upin} \
+    --write-object /tmp/root.der --type cert --id ${key_id} --label ${key_label}
+
 rm -f /tmp/out
 rm -f /tmp/pubkey.*
 rm -f /tmp/ca.der
+rm -f /tmp/root.der
 
 #Create config file
 cat <<EOF > /tmp/config

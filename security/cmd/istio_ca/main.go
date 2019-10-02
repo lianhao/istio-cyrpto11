@@ -546,7 +546,7 @@ func verifyCommandLineOptions() {
 func importCAKey() error {
 
 	if _, err := exec.Command("/import.sh", opts.signingKeyFile, opts.signingCertFile, opts.protectedCAKeyLabel,
-				opts.protectedCAKeyId, opts.protectedTokenPin).Output();  err != nil {
+				opts.protectedCAKeyId, opts.protectedTokenPin, opts.rootCertFile, opts.certChainFile).Output();  err != nil {
 		return err
 	}
 	return nil
